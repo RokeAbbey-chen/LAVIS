@@ -46,7 +46,7 @@ def download_and_save_image(ann, save_dir, timeout=None, retries=0):
 
     if image is not None:
         image_path = os.path.join(save_dir, ann["image"])
-        print(image_path)
+        # print(image_path)
         image.save(image_path)
 
 

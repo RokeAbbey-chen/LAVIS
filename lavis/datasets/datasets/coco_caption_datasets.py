@@ -30,13 +30,14 @@ class COCOCapEvalDataset(CaptionEvalDataset):
 
     def __getitem__(self, index):
         ann = self.annotation[index]
+        img_id = ann["image"].split("/")[-1].strip(".jpg").split("_")[-1]
+        # print("img_id:", img_id)
 
         image_path = os.path.join(self.vis_root, ann["image"])
         image = Image.open(image_path).convert("RGB")
 
         image = self.vis_processor(image)
 
-        img_id = ann["image"].split("/")[-1].strip(".jpg").split("_")[-1]
 
         return {
             "image": image,

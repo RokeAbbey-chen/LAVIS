@@ -332,7 +332,7 @@ class VisionTransformer(nn.Module):
         x = self.pos_drop(x)
 
         rel_pos_bias = self.rel_pos_bias() if self.rel_pos_bias is not None else None
-        for blk in self.blocks:
+        for i, blk in enumerate(self.blocks):
             if self.use_checkpoint:
                 x = checkpoint.checkpoint(blk, x, rel_pos_bias)
             else:

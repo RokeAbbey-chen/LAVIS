@@ -10,6 +10,7 @@ import os
 
 import numpy as np
 import torch
+import torch.distributed
 import torch.nn as nn
 from lavis.common.dist_utils import download_cached_file, is_dist_avail_and_initialized
 from lavis.common.utils import get_abs_path, is_url
@@ -226,7 +227,10 @@ def all_gather_with_grad(tensors):
     Graph remains connected for backward grad computation.
     """
     # Queue the gathered tensors
-    world_size = torch.distributed.get_world_size()
+    if torch.distributed.is_initialized():
+        world_size = torch.distributed.get_world_size()
+    else:
+        world_size = 1
     # There is no need for reduction in the single-proc case
     if world_size == 1:
         return tensors

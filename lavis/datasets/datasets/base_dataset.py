@@ -35,12 +35,26 @@ class BaseDataset(Dataset):
 
             else:
                 with open(ann_path, "r") as f:
-                    loaded = json.load(f)
+                    loaded:list = json.load(f)
+                    if ann_path.endswith('train.json'):
+                        loaded = [an for an in loaded if 'val' not in an['image']]
+                    # if 'image_id' in loaded[0]:
+                    #     loaded = loaded[2949 * 64:]
+                    #     for i in range(len(loaded)):
+                    #         if loaded[i]['image_id'] == 'coco_254701':
+                    #             loaded = loaded[i:]
+                    #             break
                     if isinstance(loaded, list):
                         self.annotation.extend(loaded)
                     elif isinstance(loaded, dict):
                        self.annotation.extend([{"sample_id": k, **v} if isinstance(v, dict) else {"sample_id": k, "data": v} for k, v in loaded.items()])
 
+
+
+        with open("logs/annos.json", "a+") as f:
+            f.write(f"len(loaded): {len(loaded)}\n")
+            if 'image_id' in loaded[0]:
+                f.write(f"{[an['image_id'] for an in loaded]}")
 
         self.vis_processor = vis_processor
         self.text_processor = text_processor
@@ -80,6 +94,7 @@ class ConcatDataset(ConcatDataset):
     def collater(self, samples):
         # TODO For now only supports datasets with same underlying collater implementations
 
+        # print("samples:", samples)
         all_keys = set()
         for s in samples:
             all_keys.update(s)

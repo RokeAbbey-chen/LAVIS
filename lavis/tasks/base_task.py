@@ -200,15 +200,21 @@ class BaseTask:
             header = header + "; inner epoch [{}]".format(inner_epoch)
 
         for i in metric_logger.log_every(range(iters_per_epoch), log_freq, header):
+        # for i in range(iters_per_epoch):
             # if using iter-based runner, we stop after iters_per_epoch iterations.
             if i >= iters_per_epoch:
                 break
 
+            # print("data_loader:", data_loader)
             samples = next(data_loader)
 
             samples = prepare_sample(samples, cuda_enabled=cuda_enabled)
 
+            # with open("logs/blip_debug0.log", 'a+') as f:
+            #     f.write(f"samples_image_id:\n{samples['image_id']}\n-------------")
+            #     f.flush()
             ## notify model that sample is empty (error occured)
+            # continue
             if not isinstance(samples, dict):
                 samples = {"is_empty":True}
 
@@ -221,7 +227,9 @@ class BaseTask:
             )
 
             lr_scheduler.step(cur_epoch=inner_epoch, cur_step=i)
-
+            # print("i: ", i)
+            # if i < 2950:
+            #     continue
             with torch.cuda.amp.autocast(enabled=use_amp):
                 loss, loss_dict = self.train_step(model=model, samples=samples)
                 loss /= accum_grad_iters #TODO: not affect loss_dict values for logging

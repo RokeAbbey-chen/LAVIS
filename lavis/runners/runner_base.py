@@ -190,7 +190,7 @@ class RunnerBase:
             logging.info(
                 "dataset_ratios not specified, datasets will be concatenated (map-style datasets) or chained (webdataset.DataPipeline)."
             )
-
+            print("self.datasets:", self.datasets)
             datasets = reorg_datasets_by_split(self.datasets)
             self.datasets = concat_datasets(datasets)
 
@@ -342,6 +342,7 @@ class RunnerBase:
     @property
     def train_loader(self):
         train_dataloader = self.dataloaders["train"]
+        # print("train_loader:", train_dataloader)
 
         return train_dataloader
 
@@ -418,8 +419,8 @@ class RunnerBase:
             # save checkpoint according to save freq
             if self.save_freq>0 and cur_epoch%self.save_freq == 0:
                 self._save_checkpoint(cur_epoch, is_best=False)
-
-            dist.barrier()
+            if dist.is_initialized():
+                dist.barrier()
 
         # save last checkpoint
         if self.save_last and not self.evaluate_only:
@@ -646,7 +647,7 @@ class RunnerBase:
             raise RuntimeError("checkpoint url or path is invalid")
 
         state_dict = checkpoint["model"]
-        self.unwrap_dist_model(self.model).load_state_dict(state_dict)
+        self.unwrap_dist_model(self.model).load_state_dict(state_dict, strict=False)
 
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         if self.scaler and "scaler" in checkpoint:

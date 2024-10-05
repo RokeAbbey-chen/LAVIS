@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 from lavis.datasets.datasets.base_dataset import BaseDataset
 from PIL import Image
+import re
 
 
 class __DisplMixin:
@@ -36,7 +37,8 @@ class CaptionDataset(BaseDataset, __DisplMixin):
         self.img_ids = {}
         n = 0
         for ann in self.annotation:
-            img_id = ann["image_id"]
+            img_id = re.sub(r'[^\d]', '', ann["image_id"])
+            ann['image_id'] = int(img_id)
             if img_id not in self.img_ids.keys():
                 self.img_ids[img_id] = n
                 n += 1
@@ -48,8 +50,10 @@ class CaptionDataset(BaseDataset, __DisplMixin):
 
         image_path = os.path.join(self.vis_root, ann["image"])
         try:
+            # print("image_path:", image_path)
             image = Image.open(image_path).convert("RGB")
         except:
+            print("image doesn't exist:", image_path)
             return None # image does not exist
 
         image = self.vis_processor(image)

@@ -134,7 +134,8 @@ class Blip2Qformer(Blip2Base):
 
         sim_q2t = torch.matmul(
             image_feats.unsqueeze(1), text_feat_all.unsqueeze(-1)
-        ).squeeze()
+        )
+        sim_q2t = sim_q2t.squeeze(dim=list(range(2, len(sim_q2t.shape))))
         # [batch_size, batch_size*num_gpu, num_query_tokens]
 
         # image-text similarity: aggregate across all query tokens
@@ -144,20 +145,24 @@ class Blip2Qformer(Blip2Base):
         # text-query similarity: [batch_size, batch_size*num_gpu, num_query_tokens]
         sim_t2q = torch.matmul(
             text_feat.unsqueeze(1).unsqueeze(1), image_feats_all.permute(0, 2, 1)
-        ).squeeze()
+        )
+        sim_t2q = sim_t2q.squeeze(dim=list(range(2, len(sim_t2q.shape))))
 
         # text-image similarity: aggregate across all query tokens
         sim_t2i, _ = sim_t2q.max(-1)
         sim_t2i = sim_t2i / self.temp  # [batch_size, batch_size*num_gpu]
 
-        rank = dist.get_rank()
+        if dist.is_initialized():
+            rank = dist.get_rank()
+        else:
+            rank = 0
         bs = image.size(0)
         targets = torch.linspace(rank * bs, rank * bs + bs - 1, bs, dtype=int).to(
             image.device
         )
 
         if "image_id" in samples.keys(): #coco retrieval finetuning
-            image_ids = samples["image_id"].view(-1,1)
+            image_ids = torch.tensor(samples["image_id"]).to(sim_t2i.device).view(-1,1)
             image_ids_all = concat_all_gather(image_ids)
             pos_idx = torch.eq(image_ids, image_ids_all.t()).float()       
             sim_targets = pos_idx / pos_idx.sum(1,keepdim=True)   
@@ -165,7 +170,7 @@ class Blip2Qformer(Blip2Base):
 
             loss_t2i = -torch.sum(F.log_softmax(sim_t2i, dim=1)*sim_targets,dim=1).mean()
             loss_i2t = -torch.sum(F.log_softmax(sim_i2t, dim=1)*sim_targets,dim=1).mean()     
-            loss_itc = (loss_t2i+loss_i2t)/2  
+            loss_itc = (loss_t2i + loss_i2t) / 2
         else:                     
             loss_itc = (
                 F.cross_entropy(sim_i2t, targets, label_smoothing=0.1)
@@ -315,19 +320,25 @@ class Blip2Qformer(Blip2Base):
             "encoder_attention_mask": image_atts,
         }
 
+        # input_ids = (
+        #     torch.LongTensor(image.size(0), 1)
+        #     .fill_(self.tokenizer.bos_token_id)
+        #     .to(image.device)
+        # )
         input_ids = (
-            torch.LongTensor(image.size(0), 1)
+            torch.LongTensor(image_embeds.size(0), 1)
             .fill_(self.tokenizer.bos_token_id)
             .to(image.device)
         )
         query_tokens = self.query_tokens.expand(image_embeds.shape[0], -1, -1)
+        # query_tokens = self.query_tokens.expand(image.shape[0], -1, -1)
 
         outputs = self.Qformer.generate(
             input_ids=input_ids,
             query_embeds=query_tokens,
             max_length=max_length,
             min_length=min_length,
-            num_beams=num_beams,
+            num_beams=1, #num_beams,
             do_sample=use_nucleus_sampling,
             top_p=top_p,
             eos_token_id=self.tokenizer.sep_token_id,
@@ -499,6 +510,7 @@ class Blip2Qformer(Blip2Base):
 
     @classmethod
     def from_config(cls, cfg):
+        print("line 502, cfg:", cfg)
         vit_model = cfg.get("vit_model", "eva_clip_g")
         img_size = cfg.get("image_size")
         num_query_token = cfg.get("num_query_token")
