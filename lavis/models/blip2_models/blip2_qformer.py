@@ -277,6 +277,7 @@ class Blip2Qformer(Blip2Base):
             loss_itc=loss_itc,
             loss_itm=loss_itm,
             loss_lm=loss_lm,
+            logits=lm_output.logits
         )
 
     @torch.no_grad()

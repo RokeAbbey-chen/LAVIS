@@ -84,6 +84,8 @@ class BlipOutput(ModelOutput):
 
     loss_lm: Optional[torch.FloatTensor] = None
 
+    logits: Optional[torch.FloatTensor] = None
+
 
 @dataclass
 class BlipOutputWithLogits(BlipOutput):

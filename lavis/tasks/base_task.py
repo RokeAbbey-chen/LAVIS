@@ -10,6 +10,7 @@ import os
 
 import torch
 import torch.distributed as dist
+from pprint import pprint
 from lavis.common.dist_utils import get_rank, get_world_size, is_main_process, is_dist_avail_and_initialized
 from lavis.common.logger import MetricLogger, SmoothedValue
 from lavis.common.registry import registry
@@ -59,18 +60,21 @@ class BaseTask:
 
         return datasets
 
-    def train_step(self, model, samples):
+    def train_step(self, model, samples, need_logits=False):
         output = model(samples)
         loss_dict = {}
         for k,v in output.items():
             if "loss" in k:
                 loss_dict[k] = v
+        if need_logits:
+            return output["loss"], loss_dict, output.logits
         return output["loss"], loss_dict
 
     def valid_step(self, model, samples):
         use_amp = True
-        with torch.amp.autocast(enabled=use_amp, device_type='cuda'):
-            return self.train_step(model, samples)
+        with torch.no_grad():
+            with torch.amp.autocast(enabled=use_amp, device_type='cuda'):
+                return self.train_step(model, samples, need_logits=True)
         # raise NotImplementedError
     
     def before_training(self, model, dataset, **kwargs):
@@ -93,12 +97,20 @@ class BaseTask:
 
         results = []
 
-        for samples in metric_logger.log_every(data_loader, print_freq, header):
+        for i, samples in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
+
             samples = prepare_sample(samples, cuda_enabled=cuda_enabled)
 
             eval_output = self.valid_step(model=model, samples=samples)
-            results.extend(eval_output)
+            # results.extend(eval_output[:2])
             metric_logger.update(**eval_output[1])
+            if 0 == i:
+                indices = torch.argmax(eval_output[2], dim=-1)
+                texts = model.tokenizer.batch_decode(indices, skip_special_tokens=True)
+                print("texts:\n")
+                for i in range(len(texts)):
+                    pprint([samples['image_id'][i],'|', samples['text_input'][i], '|', texts[i]], width=300)
+                # pprint(texts)
 
         if is_dist_avail_and_initialized():
             dist.barrier()
