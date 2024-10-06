@@ -68,7 +68,10 @@ class BaseTask:
         return output["loss"], loss_dict
 
     def valid_step(self, model, samples):
-        raise NotImplementedError
+        use_amp = True
+        with torch.amp.autocast(enabled=use_amp, device_type='cuda'):
+            return self.train_step(model, samples)
+        # raise NotImplementedError
     
     def before_training(self, model, dataset, **kwargs):
         model.before_training(dataset=dataset, task_type=type(self))
@@ -95,6 +98,7 @@ class BaseTask:
 
             eval_output = self.valid_step(model=model, samples=samples)
             results.extend(eval_output)
+            metric_logger.update(**eval_output[1])
 
         if is_dist_avail_and_initialized():
             dist.barrier()
@@ -260,7 +264,7 @@ class BaseTask:
             k: "{:.3f}".format(meter.global_avg)
             for k, meter in metric_logger.meters.items()
         }
-
+                 
     @staticmethod
     def save_result(result, result_dir, filename, remove_duplicate=""):
         import json

@@ -24,6 +24,7 @@ from lavis.models import *
 from lavis.processors import *
 from lavis.runners import *
 from lavis.tasks import *
+from lavis.models.blip2_models.Qformer import BertLMHeadModel
 
 from lavis.processors.blip_processors import Blip2ImageTrainProcessor
 from train import parse_args, get_runner_class
@@ -55,5 +56,18 @@ def main0():
     # )
     # runner.train()
     
+
+def eval(model: BertLMHeadModel, samples:dict):
+    """
+    @param samples: must have 'image' 'text_input' as keys
+    """
+    is_training = model.training
+    model.eval()
     
-main0()
+    
+def main1():
+    pass
+
+
+
+main1()

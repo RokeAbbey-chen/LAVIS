@@ -37,7 +37,10 @@ class CaptionDataset(BaseDataset, __DisplMixin):
         self.img_ids = {}
         n = 0
         for ann in self.annotation:
-            img_id = re.sub(r'[^\d]', '', ann["image_id"])
+            if 'image_id' not in ann:
+                img_id = re.search(r"_0*([^0]\d+)\.jpg", ann['image']).group(1)
+            else:
+                img_id = re.sub(r'[^\d]', '', ann["image_id"])
             ann['image_id'] = int(img_id)
             if img_id not in self.img_ids.keys():
                 self.img_ids[img_id] = n
@@ -89,6 +92,13 @@ class CaptionEvalDataset(BaseDataset, __DisplMixin):
             "instance_id": ann["instance_id"],
         }
 
+class CaptionEvalDataset2(CaptionDataset):
+    def __init__(self, vis_processor, text_processor, vis_root, ann_paths):
+        super().__init__(vis_processor, text_processor, vis_root, ann_paths)
+        tiled_annotation = [{**ann, 'caption': cap} for ann in self.annotation for cap in ann['caption']]
+        self.annotation = tiled_annotation
+        
+        
 class CaptionInstructDataset(CaptionDataset):
     def __getitem__(self, index):
         data = super().__getitem__(index)

@@ -14,6 +14,7 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 from lavis.datasets.datasets.caption_datasets import CaptionDataset, CaptionInstructDataset, CaptionEvalDataset
+from lavis.datasets.datasets.caption_datasets import CaptionEvalDataset2 as COCOCapEvalDataset2
 
 COCOCapDataset = CaptionDataset
 COCOCapInstructDataset = CaptionInstructDataset

@@ -11,6 +11,7 @@ from lavis.datasets.datasets.coco_caption_datasets import (
     COCOCapDataset,
     COCOCapInstructDataset,
     COCOCapEvalDataset,
+    COCOCapEvalDataset2,
     NoCapsEvalDataset,
 )
 
@@ -39,7 +40,7 @@ from lavis.datasets.datasets.textcaps_datasets import TextCapsCapDataset, TextCa
 @registry.register_builder("coco_caption")
 class COCOCapBuilder(BaseDatasetBuilder):
     train_dataset_cls = COCOCapDataset
-    eval_dataset_cls = COCOCapEvalDataset
+    eval_dataset_cls = COCOCapEvalDataset2
 
     DATASET_CONFIG_DICT = {
         "default": "configs/datasets/coco/defaults_cap.yaml",
