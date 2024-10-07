@@ -252,6 +252,36 @@ class Blip2Qformer(Blip2Base):
         loss_itm = F.cross_entropy(logits, itm_labels)
 
         ##================= Image Captioning ========================##
+        lm_output = self.itg(text_tokens, query_tokens, image, query_output, samples)
+        # decoder_input_ids = text_tokens.input_ids.clone()
+        # decoder_input_ids[:, 0] = self.tokenizer.bos_token_id
+        # labels = decoder_input_ids.masked_fill(
+        #     decoder_input_ids == self.tokenizer.pad_token_id, -100
+        # )
+
+        # query_atts = torch.ones(query_tokens.size()[:-1], dtype=torch.long).to(
+        #     image.device
+        # )
+        # attention_mask = torch.cat([query_atts, text_tokens.attention_mask], dim=1)
+        # lm_output = self.Qformer(
+        #     decoder_input_ids,
+        #     attention_mask=attention_mask,
+        #     past_key_values=query_output.past_key_values,
+        #     return_dict=True,
+        #     labels=labels,
+        # )
+
+        loss_lm = lm_output.loss
+
+        return BlipOutput(
+            loss=loss_itc + loss_itm + loss_lm,
+            loss_itc=loss_itc,
+            loss_itm=loss_itm,
+            loss_lm=loss_lm,
+            logits=lm_output.logits
+        )
+
+    def itg(self, text_tokens, query_tokens, image, query_output, samples=None):
         decoder_input_ids = text_tokens.input_ids.clone()
         decoder_input_ids[:, 0] = self.tokenizer.bos_token_id
         labels = decoder_input_ids.masked_fill(
@@ -270,15 +300,9 @@ class Blip2Qformer(Blip2Base):
             labels=labels,
         )
 
-        loss_lm = lm_output.loss
+        # loss_lm = lm_output.loss
+        return lm_output
 
-        return BlipOutput(
-            loss=loss_itc + loss_itm + loss_lm,
-            loss_itc=loss_itc,
-            loss_itm=loss_itm,
-            loss_lm=loss_lm,
-            logits=lm_output.logits
-        )
 
     @torch.no_grad()
     def generate(

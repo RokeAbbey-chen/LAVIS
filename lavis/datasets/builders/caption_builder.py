@@ -4,7 +4,14 @@
  SPDX-License-Identifier: BSD-3-Clause
  For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
+import logging
+import os
+import shutil
+import warnings
 
+from lavis.common.dist_utils import is_dist_avail_and_initialized, is_main_process
+
+import lavis.common.utils as utils
 from lavis.datasets.builders.base_dataset_builder import BaseDatasetBuilder, MultiModalDatasetBuilder
 from lavis.datasets.datasets.capfilt_dataset import CapFiltCaptionInstructDataset, CapFiltCaptionDataset
 from lavis.datasets.datasets.coco_caption_datasets import (
@@ -36,6 +43,7 @@ from lavis.datasets.datasets.vatex_captioning_datasets import VATEXCaptionInstuc
 from lavis.datasets.datasets.vlep_dataset import VlepVideoDataset, VlepVideoInstructDataset, VlepVideoEvalDataset
 from lavis.datasets.datasets.vsr_datasets import VSRCaptionDataset, VSRCaptionInstructDataset, VSRCaptionEvalDataset
 from lavis.datasets.datasets.textcaps_datasets import TextCapsCapDataset, TextCapsCapInstructDataset, TextCapsCapEvalDataset
+from lavis.datasets.datasets.latin_caption_datasets import LatinCapDataset
 
 @registry.register_builder("coco_caption")
 class COCOCapBuilder(BaseDatasetBuilder):
@@ -54,6 +62,62 @@ class COCOCapInstructBuilder(BaseDatasetBuilder):
     DATASET_CONFIG_DICT = {
         "default": "configs/datasets/coco/defaults_cap_instruct.yaml",
     }
+
+
+@registry.register_builder("latin_caption")
+class LatinCapBuilder(BaseDatasetBuilder):
+    train_dataset_cls = LatinCapDataset
+    eval_dataset_cls = LatinCapDataset
+
+    DATASET_CONFIG_DICT = {
+        # "default": "configs/datasets/coco/defaults_cap_instruct.yaml",
+    }
+
+    def build_datasets(self):
+        # return super().build_datasets()
+        logging.info("Building datasets...")
+        datasets = self.build()
+        return datasets
+
+    def build(self):
+        self.build_processors()
+
+        build_info = self.config.build_info
+
+        vis_info = build_info.get(self.data_type)
+        datasets = {}
+        for split in vis_info.keys():
+            if split not in ["train", "val", "test"]:
+                continue
+
+            is_train = split == "train"
+
+            # processors
+            vis_processor = (
+                self.vis_processors["train"]
+                if is_train
+                else self.vis_processors["eval"]
+            )
+            text_processor = (
+                self.text_processors["train"]
+                if is_train
+                else self.text_processors["eval"]
+            )
+
+            paths = vis_info.get(split)
+            if isinstance(paths, str):
+                paths = [paths]
+
+            abs_paths = [p if os.path.isabs(p) else utils.get_cache_path(p) for p in paths]
+
+            dataset_cls = self.train_dataset_cls if is_train else self.eval_dataset_cls
+            datasets[split] = dataset_cls(
+                vis_processor=vis_processor,
+                text_processor=text_processor,
+                paths=abs_paths
+            )
+
+        return datasets
 
 
 @registry.register_builder("flickr30k_caption")

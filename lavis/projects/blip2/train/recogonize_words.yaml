@@ -24,6 +24,30 @@ datasets:
           name: "blip_caption"
         eval:
           name: "blip_caption"
+
+    data_type: images # [images|videos|features]
+
+    build_info:
+      # Be careful not to append minus sign (-) before split to avoid itemizing
+      # images 
+      # annotations:
+      #   train:
+      #     # url: https://storage.googleapis.com/sfr-vision-language-research/datasets/coco_karpathy_train.json
+      #     # md5: aa31ac474cf6250ebb81d18348a07ed8
+      #     storage: latin/annotations/latin_karpathy_train.json
+      #   val:
+      #     # url: https://storage.googleapis.com/sfr-vision-language-research/datasets/coco_karpathy_val.json
+      #     # md5: b273847456ef5580e33713b1f7de52a0
+      #     storage: latin/annotations/latin_karpathy_val.json
+      #   test:
+      #     # url: https://storage.googleapis.com/sfr-vision-language-research/datasets/coco_karpathy_test.json
+      #     # md5: 3ff34b0ef2db02d01c37399f6a2a6cd1
+      #     storage: latin/annotations/latin_karpathy_test.json
+      images:
+        train: [latin/train/]
+        val: [latin/val]
+        test: [latin/test]
+        storage: latin/images/
 #     build_info:
 #         images:
 #             storage: '/export/share/datasets/vision/coco/images/'          
@@ -60,7 +84,7 @@ run:
   save_freq: 1
 
   amp: True
-  resume_ckpt_path: "/workspace/LAVIS/lavis/output/BLIP2/Pretrain_stage1/20241007045/checkpoint_28.pth"
+  resume_ckpt_path: "/workspace/LAVIS/lavis/output/BLIP2/Pretrain_stage1/20241006043/checkpoint_21.pth" #null
 
   evaluate: False 
   train_splits: ["train"]
