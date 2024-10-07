@@ -71,6 +71,7 @@ class LatinCapBuilder(BaseDatasetBuilder):
 
     DATASET_CONFIG_DICT = {
         # "default": "configs/datasets/coco/defaults_cap_instruct.yaml",
+        "default": "configs/datasets/latin/defaults_cap.yaml"
     }
 
     def build_datasets(self):

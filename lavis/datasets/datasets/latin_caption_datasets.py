@@ -43,22 +43,22 @@ class LatinCapDataset(CaptionDataset):
         def get_label_path(bathp: str, imgp: str):
             matcher = re.search(r'(\d+)(?:\.jpg|\.png)', imgp)
             if matcher:
-                labp = osp.join(bp, 'labels', f"{matcher.group(1)}.json")
+                labp = osp.join(bathp, 'labels', f"{matcher.group(1)}.json")
                 if osp.exists(labp):
                     return labp
             return None
 
         def get_label(labp: str):
             with open(labp, 'r', encoding='utf-8') as f:
-                d = json.loads(f)
+                d = json.load(f)
                 # label = self.LABEL_DELLIMITER.join(d['text'])
                 return d['text']
 
         image_id = 0
         for basepath in paths:
-            dirs = [d for d in os.listdir(basepath) if osp.isdir(osp.join(basepath, d, f'sub{d}'))]
+            dirs = [d for d in os.listdir(basepath) if osp.isdir(osp.join(basepath, d, f'sub_{d}'))]
             for d in dirs:
-                bp = osp.join(basepath, d)
+                bp = osp.join(basepath, d, f'sub_{d}')
                 img_paths = glob(osp.join(bp, 'imgs/*'))
                 anns = []
                 for imgp in img_paths:
@@ -67,22 +67,30 @@ class LatinCapDataset(CaptionDataset):
                         continue
                     labels = get_label(labp)
                     captions = []
-                    for i in range(min(5, len(labels))):
+                    for i in range(5):
                         copy_ = copy.copy(labels)
                         if i > 0:
                             rd.shuffle(copy_)
-                        captions.append(self.LABEL_DELLIMITER.join(copy_))
+                        copy_ = self.LABEL_DELLIMITER.join(copy_)
+                        captions.append(copy_)
                         anns.append({'image_path': imgp, 'lable_path': labp, 'caption': copy_, 'captions': captions, 'image_id': image_id})
                     image_id += 1
-            annotations.extend(anns)
+                annotations.extend(anns)
         self.annotation = annotations
+
+        self.vis_processor = vis_processor
+        self.text_processor = text_processor
+
+        self._add_instance_ids()
+
                 
                 
     def __getitem__(self, index):
         # TODO this assumes image input, not general enough
         ann = self.annotation[index]
 
-        image_path = os.path.join(self.vis_root, ann["image_path"])
+        # image_path = os.path.join(self.vis_root, ann["image_path"])
+        image_path = ann['image_path']
         try:
             image = Image.open(image_path).convert("RGB")
         except:
@@ -97,4 +105,5 @@ class LatinCapDataset(CaptionDataset):
             "image_id": ann["image_id"],
             "all_text_input": ann['captions']
         }
+
 

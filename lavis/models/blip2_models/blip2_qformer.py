@@ -252,7 +252,7 @@ class Blip2Qformer(Blip2Base):
         loss_itm = F.cross_entropy(logits, itm_labels)
 
         ##================= Image Captioning ========================##
-        lm_output = self.itg(text_tokens, query_tokens, image, query_output, samples)
+        lm_output = self.itg(text_tokens, query_tokens, image, query_output, samples, reduction='mean')
         # decoder_input_ids = text_tokens.input_ids.clone()
         # decoder_input_ids[:, 0] = self.tokenizer.bos_token_id
         # labels = decoder_input_ids.masked_fill(
@@ -281,7 +281,7 @@ class Blip2Qformer(Blip2Base):
             logits=lm_output.logits
         )
 
-    def itg(self, text_tokens, query_tokens, image, query_output, samples=None):
+    def itg(self, text_tokens, query_tokens, image, query_output, samples=None, reduction='mean'):
         decoder_input_ids = text_tokens.input_ids.clone()
         decoder_input_ids[:, 0] = self.tokenizer.bos_token_id
         labels = decoder_input_ids.masked_fill(
@@ -298,6 +298,7 @@ class Blip2Qformer(Blip2Base):
             past_key_values=query_output.past_key_values,
             return_dict=True,
             labels=labels,
+            reduction=reduction
         )
 
         # loss_lm = lm_output.loss

@@ -12,7 +12,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "train",
+            "name": "train-coco",
             "type": "debugpy",
             "request": "launch",
             "program": "train.py",
@@ -31,6 +31,17 @@
             "args": [
                 "--cfg-path=lavis/projects/blip2/train/pretrain_stage1.yaml"
             ]
-        }
+        },
+
+        {
+            "name": "train-latin",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--cfg-path=lavis/projects/blip2/train/recogonize_words.yaml"
+            ]
+        },
     ]
 }
